@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>What Anthropic Manages In Managed Agents. And What You Still Do.</title>
+<title>Both Amodei Siblings On Stage. No New Model. Four Features That Push Work Back To You.</title>
 <style>
   body { max-width: 720px; margin: 40px auto; padding: 0 24px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #222; line-height: 1.6; }
   h1 { font-size: 32px; line-height: 1.25; margin-bottom: 24px; }
@@ -23,19 +23,17 @@
 </head>
 <body>
 
-<h1>What Anthropic Manages In Managed Agents. And What You Still Do.</h1>
+<h1>Both Amodei Siblings On Stage. No New Model. Four Features That Push Work Back To You.</h1>
 
-<p>The keynote at Code with Claude SF 2026 sold Dreams as "a scheduled process that reviews your agent sessions and memory stores." That single phrase shaped how engineering teams filed it: a managed cron, running quietly, curating memory between sessions.</p>
+<p>Code with Claude SF 2026 was the day Anthropic disclosed 80x annualized growth in Q1 2026, against a planned 10x. The number landed in an unusual setting: Dario Amodei and his sister Daniela on stage together, with CPO Ami Vora. Both Amodei siblings appearing at a single product keynote is rare. API volume up 17x year over year. Revenue run rate at $30B, up from $9B at the end of 2025. Claude Code users averaging 20 hours a week with the tool. Those numbers reframed every announcement that followed.</p>
 
-<p>Then you read the docs. The SDK call is <code>dreams.create</code>. There is no schedule. It is an async job you trigger. The cron is yours to write, the adoption decision is yours, the lineage is yours to track. One mechanic, the entire framing shifts.</p>
+<p>The headline launch was the Managed Agents expansion: four new primitives (Outcomes, Dreams, Multi-Agent, Webhooks) that move agent infrastructure from your codebase into Anthropic's. The most consequential platform launch since the Sessions API in April.</p>
 
 <h2>Before we start! 🦸🏻‍♀️</h2>
 
 <p>If this helps you ship better AI systems: 👏 Clap 50 times (yes, you can!). Medium's algorithm favors this, increasing visibility to others who then discover the article. 🔔 Follow me on <a href="https://medium.com/@han.heloir">Medium</a>, <a href="https://www.linkedin.com/in/hanheloiryan/">LinkedIn</a> and <a href="https://medium.com/@han.heloir/about">subscribe</a> to get my latest article.</p>
 
-<p>The May 6 announcement covered four Managed Agents primitives: Outcomes, Dreams, Multi-Agent, and Webhooks. The keynote presented a coherent platform expansion. The docs ship a per feature contract: Anthropic runs a specific slice, you still own the rest.</p>
-
-<p>What follows walks each primitive through the same lens, grounded in the SDK calls and lifecycle states the slide deck skipped. The piece is opinionated about where to commit, where to defer, and why reading the docs is now architectural literacy.</p>
+<p>This piece demystifies what actually shipped. The keynote presented a fully managed platform. The mechanics ship something more interesting: a coordinator's harness where Anthropic owns a slice and you still own the rest. Each primitive walked through the SDK calls and lifecycle states the slide deck skipped, with an opinionated read of where to commit, where to defer, and why reading the docs is now architectural literacy.</p>
 
 <h2>Outcomes: the harness handles the loop, you author the rubric</h2>
 
