@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>What Anthropic Manages In Managed Agents. And What You Still Do.</title>
+<style>
+  body { max-width: 720px; margin: 40px auto; padding: 0 24px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #222; line-height: 1.6; }
+  h1 { font-size: 32px; line-height: 1.25; margin-bottom: 24px; }
+  h2 { font-size: 24px; margin-top: 40px; margin-bottom: 16px; }
+  h3 { font-size: 18px; margin-top: 28px; margin-bottom: 10px; color: #444; }
+  p { margin: 0 0 16px; }
+  img { max-width: 100%; display: block; margin: 24px auto; }
+  pre { background: #f5f5f0; padding: 16px; overflow-x: auto; border-radius: 4px; font-size: 13px; line-height: 1.5; }
+  code { font-family: "IBM Plex Mono", Menlo, monospace; }
+  pre code { background: transparent; padding: 0; }
+  p code { background: #f5f5f0; padding: 2px 5px; border-radius: 3px; font-size: 0.92em; }
+  a { color: #0066cc; }
+  ul { margin: 0 0 16px; padding-left: 24px; }
+  li { margin-bottom: 6px; }
+  blockquote { border-left: 3px solid #d97757; padding-left: 16px; color: #555; margin: 16px 0; }
+</style>
+</head>
+<body>
+
+<h1>What Anthropic Manages In Managed Agents. And What You Still Do.</h1>
+
+<p>The keynote at Code with Claude SF 2026 sold Dreams as "a scheduled process that reviews your agent sessions and memory stores." That single phrase shaped how every architect in the room mentally filed it: a managed cron, running quietly, curating memory between sessions.</p>
+
+<p>Then you read the docs. The SDK call is <code>dreams.create</code>. There is no schedule. It is an async job you trigger. The cron is yours to write, the adoption decision is yours, the lineage is yours to track.</p>
+
+<p>One small gap reframes everything. Code with Claude SF 2026 was the moment Anthropic stopped selling abstraction and started selling a harness. The docs reveal what they actually shipped, and what stays your job.</p>
+
+<h2>Before we start! 🦸🏻‍♀️</h2>
+
+<p>If this helps you ship better AI systems: 👏 Clap 50 times (yes, you can!). Medium's algorithm favors this, increasing visibility to others who then discover the article. 🔔 Follow me on <a href="https://medium.com/@han.heloir">Medium</a>, <a href="https://www.linkedin.com/in/hanheloiryan/">LinkedIn</a> and <a href="https://medium.com/@han.heloir/about">subscribe</a> to get my latest article.</p>
+
+<p>Code with Claude SF 2026 shipped four Managed Agents primitives: Outcomes, Dreams, Multi-Agent, and Webhooks. The keynote framed them as a coherent platform expansion. The docs reveal a per feature pattern: Anthropic manages a specific slice, and you still own the rest.</p>
+
+<p>What follows walks each primitive through the same lens. For each one we ask: what does Anthropic actually run on your behalf, what stays your job, and what is the commit posture once you understand both sides?</p>
+
+<p>The marketing claims a fully managed service. The mechanics ship something more interesting: a coordinator's harness that pushes architectural work back to you in places the slide deck never named. The piece is opinionated about where to commit and where to defer, grounded in the actual SDK calls and the actual lifecycle states.</p>
+
+<h2>Outcomes: the harness handles the loop, you author the rubric</h2>
+
+<p>Outcomes is the primitive most architects should commit to first. The mechanics are clean, the lifecycle is well bounded, and the architectural leverage is highest of the four.</p>
+
+<img src="https://raw.githubusercontent.com/cozypet/managed_agent_anthropic/main/images/diagram-01.png" alt="What Anthropic manages in Outcomes: the executor and grader, with the rubric and audit log on your side.">
+
+<p>Here is what Anthropic actually runs. When you define an outcome, the harness provisions a separate grader in its own context window. The grader has no access to the executor's tools and never sees the agent's reasoning trace. It evaluates the artifact against your rubric and returns a per criterion verdict to the agent. The loop runs until the agent satisfies the rubric, the iteration budget runs out, or the rubric itself fails.</p>
+
+<p>Five terminal states close every outcome: <code>satisfied</code>, <code>needs_revision</code>, <code>max_iterations_reached</code>, <code>failed</code>, <code>interrupted</code>. The default iteration budget is 3, the cap is 20. Pick the budget per task: tight for cheap drafts, generous for hard reasoning.</p>
+
+<p>The marketing says agents self correct against a rubric. The docs add the sharper detail: the grader's reasoning is opaque. You see when it runs and what it decides. You do not see how it reached that decision. The line in the docs is direct: "you see that it's working, not what it's thinking." For audit heavy verticals like finance and healthcare, that opacity is the question to bring to your compliance team before commit.</p>
+
+<p>The other detail the docs surface that the keynote did not: the <code>failed</code> terminal state means the rubric fundamentally does not match the task. Most evaluation systems return a low score when work falls short. Outcomes can return that the rubric itself is not a valid measurement instrument. That is a feedback signal most internal eval pipelines never produce, and it shifts where the engineering effort lives.</p>
+
+<h3>How to do it</h3>
+
+<p>Anthropic ships the grader. You write the rubric. The rubric is a markdown document, a few dozen lines describing what "done" looks like per criterion. It travels with your codebase like any other versioned artifact.</p>
+
+<pre><code class="language-markdown"># API Reference Page Rubric
+
+## Endpoint Coverage
+- Every public method in the SDK has a dedicated section
+- HTTP method, path, and required headers are documented
+
+## Request Schema
+- Every parameter listed with type, required or optional, and constraints
+- At least one example value per parameter
+
+## Response Schema
+- Success response shape documented with field types
+- Each error code (4xx, 5xx) has an example payload and a remediation note
+
+## Examples
+- One curl example per endpoint
+- One Python SDK example per endpoint, runnable directly
+
+## Output Quality
+- Output is one Markdown file per endpoint, in /mnt/session/outputs/
+- Internal references use relative links, not absolute URLs
+</code></pre>
+
+<img src="https://raw.githubusercontent.com/cozypet/managed_agent_anthropic/main/images/diagram-02.png" alt="The rubric is a Files API artifact: authored once, uploaded once, attached to many sessions.">
+
+<p>The rubric runs the show. The agent's job is to satisfy it; the grader's job is to check it. Once written, you upload the rubric once and reuse it across sessions.</p>
+
+<pre><code class="language-python">import anthropic
+from pathlib import Path
+
+client = anthropic.Anthropic()
+
+# Upload the rubric once; reuse across sessions
+rubric = client.beta.files.upload(file=Path("rubrics/api_reference.md"))
+
+# Spin up a session for one endpoint
+session = client.beta.sessions.create(
+    agent=agent.id,
+    environment_id=environment.id,
+    title="API reference: outcomes.define",
+)
+
+# Hand the rubric over; the agent starts on receipt
+client.beta.sessions.events.send(
+    session_id=session.id,
+    events=[
+        {
+            "type": "user.define_outcome",
+            "description": "Write the API reference page for outcomes.define",
+            "rubric": {"type": "file", "file_id": rubric.id},
+            "max_iterations": 5,
+        }
+    ],
+)
+</code></pre>
+
+<p>Two things to notice. First, <code>rubric</code> accepts a Files API reference, so the same markdown file can drive a thousand sessions. Treat the rubric as a versioned artifact in your repo, not as inline string concatenation. Second, <code>max_iterations</code> defaults to 3 and caps at 20. The iteration budget is a real cost lever; pick it explicitly.</p>
+
+<h3>Commit posture</h3>
+
+<p>Commit. Outcomes is in public beta with a stable beta header (<code>managed-agents-2026-04-01</code>). The architectural leverage is highest of the four primitives, the lifecycle is fully observable through <code>span.outcome_evaluation_*</code> events, and the only unresolved question is grader opacity for regulated verticals. For the deeper architectural read on why verification specifically went first, see the companion investigation: <a href="#TODO-LINK-TO-OUTCOMES-INVESTIGATION">Anthropic Shipped Outcomes. Real Story Is Verification Becoming a SKU.</a></p>
+
+<h2>Dreams: the engine is shipped, the runbook is yours</h2>
+
+<p>Dreams is where the keynote framing breaks down most clearly. The blog post calls it "a scheduled process that reviews your agent sessions and memory stores." The docs call it an asynchronous job. The difference is not cosmetic.</p>
+
+<img src="https://raw.githubusercontent.com/cozypet/managed_agent_anthropic/main/images/diagram-03.png" alt="Dreams lifecycle: input store unchanged, new output store produced, you adopt or discard.">
+
+<p>Here is what Anthropic actually runs. You hand <code>dreams.create</code> an input memory store, a list of up to 100 sessions, a model (<code>claude-opus-4-7</code> or <code>claude-sonnet-4-6</code>), and an instructions field of up to 4096 characters. The platform spins up a worker that reads the input store and the sessions, extracts patterns, and writes a fresh memory store. The job moves through four states: pending, running, completed, failed, or canceled. The dream itself runs as a session, so you can stream its events through the same observability surface you already use for agents.</p>
+
+<p>Two mechanics matter. First, the input store is never modified. The dream produces a new store; you choose whether to attach it to future sessions or discard it. Second, there is no platform schedule. The platform does not run dreams on a cadence. You build the cron, you write the policy that decides when to dream, and you own the queue.</p>
+
+<h3>How to do it</h3>
+
+<p>Trigger a dream when there is enough new session history to make compaction worthwhile. The simplest pattern is a nightly job in your existing scheduler.</p>
+
+<pre><code class="language-python">import anthropic
+
+client = anthropic.Anthropic()
+
+# Pull the last 100 sessions from your tracking system
+recent_sessions = list_recent_sessions(limit=100)
+
+# Create the dream
+dream = client.beta.dreams.create(
+    memory_store_id=current_store.id,
+    session_ids=[s.id for s in recent_sessions],
+    model="claude-opus-4-7",
+    instructions=(
+        "Focus on coding style preferences and tool patterns. "
+        "Ignore one off debugging notes."
+    ),
+)
+</code></pre>
+
+<p>Two design choices live in this call. The instructions field shapes what gets curated. "Focus on coding style preferences and tool patterns; ignore one off debugging notes" produces a different output store than "Capture every workflow the agent converged on." The choice is editorial. It belongs in your codebase, not in operator memory.</p>
+
+<img src="https://raw.githubusercontent.com/cozypet/managed_agent_anthropic/main/images/diagram-04.png" alt="Memory store lineage: stores accumulate as a versioned graph, with branches for experimental dreams.">
+
+<p>Memory mutation under Dreams is git shaped. Each call produces a new store with a fresh ID. Stores accumulate; lineage matters. Rolling back means attaching an older store ID to your live agent.</p>
+
+<pre><code class="language-python">import time
+
+# Poll for completion
+while True:
+    dream = client.beta.dreams.retrieve(dream.id)
+    if dream.status in ("completed", "failed", "canceled"):
+        break
+    time.sleep(30)
+
+# Review the new store before adopting
+if dream.status == "completed":
+    if review_passes(dream.output_memory_store_id):
+        # Attach the new store; future sessions inherit it
+        client.beta.agents.update(
+            agent_id=agent.id,
+            memory_store_id=dream.output_memory_store_id,
+        )
+    else:
+        # Discard. The previous store stays attached.
+        pass
+</code></pre>
+
+<p>Two more notes. The cost scales roughly linearly with input session length, so start small and instrument before scaling. And the manual review path (read the new store, attach only after a human signs off) is the production path for regulated verticals. The auto adoption path is research grade and worth waiting on.</p>
+
+<h3>Commit posture</h3>
+
+<p>Hybrid. Commit to the manual review path now: trigger dreams, review outputs in the Console, attach when satisfied. Defer auto adoption until the research preview matures. The split is real and the docs make it possible without forcing the auto path.</p>
+
+<h2>Multi-Agent: the orchestration is platform side, the topology is yours</h2>
+
+<p>Multi-Agent Orchestration is the primitive with the heaviest mechanics in the May 6 release. It is also the primitive where the keynote framing diverges most from the API reality.</p>
+
+<img src="https://raw.githubusercontent.com/cozypet/managed_agent_anthropic/main/images/diagram-05.png" alt="Multi-Agent allows coordinator plus flat workers. Sub coordinators are not supported.">
+
+<p>Here is the first thing the docs make explicit and the keynote did not. Multi-Agent supports exactly one level of delegation. A coordinator can call workers; workers cannot call workers of their own. The blog reads as if you are getting recursive agent decomposition. The API reality is coordinator plus flat workers, full stop. If your task tree is hierarchical (research a topic, draft an outline, write each section, review each section, where every step decomposes further), you flatten it before committing or you chain via Outcomes.</p>
+
+<p>The second mechanic with architectural weight is shared state. The docs say specialists "work in parallel on a shared filesystem." Read further and the truth is sharper: every agent in a Multi-Agent session runs in the same container. Same kernel, same process namespace, same network. The only thing isolated between agents is conversation context.</p>
+
+<img src="https://raw.githubusercontent.com/cozypet/managed_agent_anthropic/main/images/diagram-06.png" alt="Multi-Agent specialists share the container: kernel, filesystem, process namespace, network. Only conversation context is isolated.">
+
+<p>Treat them as cooperating threads on shared mutable state. Standard concurrency patterns apply: file locking for contended writes, atomic moves where order matters, dedicated working directories per agent for ephemeral output, named queues for handoff. Engineers from a microservices background that assume isolation will write code that races. They will not get told they are racing; the platform does not flag concurrent file mutations.</p>
+
+<p>One more discrepancy to note. The blog labels Multi-Agent as public beta. The docs page header labels it research preview. Verify before signing off on production. Beta and research preview imply different SLAs, change windows, and supportability. The bundle hides the gradient.</p>
+
+<h3>How to do it</h3>
+
+<p>Multi-Agent topologies are static. You declare the coordinator's callable agents at orchestrator setup, and the coordinator can only delegate to that pre declared set. There is no runtime agent discovery.</p>
+
+<pre><code class="language-python">import anthropic
+
+client = anthropic.Anthropic()
+
+# Create the specialists first
+researcher = client.beta.agents.create(
+    name="Researcher",
+    model="claude-sonnet-4-6",
+    system_prompt="You research a topic and return a brief.",
+)
+drafter = client.beta.agents.create(
+    name="Drafter",
+    model="claude-opus-4-7",
+    system_prompt="You draft sections from a brief.",
+)
+editor = client.beta.agents.create(
+    name="Editor",
+    model="claude-opus-4-7",
+    system_prompt="You edit drafts against a style guide.",
+)
+
+# Declare the team at orchestrator creation
+orchestrator = client.beta.agents.create(
+    name="Drafting coordinator",
+    model="claude-opus-4-7",
+    callable_agents=[researcher.id, drafter.id, editor.id],
+    system_prompt=(
+        "Delegate research to the researcher, drafting to the drafter, "
+        "editing to the editor. Synthesize into a final article."
+    ),
+)
+</code></pre>
+
+<p>The coordinator delegates by sending messages to threads belonging to those agents. Threads are persistent within the session, so the coordinator can follow up later and the worker retains context.</p>
+
+<pre><code class="language-python"># Run a session with the coordinator
+session = client.beta.sessions.create(
+    agent=orchestrator.id,
+    environment_id=env.id,
+)
+
+client.beta.sessions.events.send(
+    session_id=session.id,
+    events=[{
+        "type": "user.message",
+        "content": "Draft an article on the May 6 Managed Agents release.",
+    }],
+)
+
+# Coordinator decides which workers to call.
+# Each worker runs in its own thread, on the shared container.
+# Outputs land at /mnt/session/outputs/&lt;worker_id&gt;/ by your convention.
+</code></pre>
+
+<p>Two engineering notes. First, design your worker outputs to land in dedicated subdirectories under <code>/mnt/session/outputs/&lt;worker_id&gt;/</code>. The container is shared; convention is your only conflict resolver. Second, capture the per worker thread events to your observability stack as soon as the session ends. The Console traces are good for debugging individual sessions, but production diagnosis needs your own observability surface.</p>
+
+<h3>Commit posture</h3>
+
+<p>Selective. Commit for flat coordinator plus workers patterns where the workers are genuinely independent. Defer for hierarchical task decomposition until Anthropic ships nesting. Verify the public beta versus research preview status against your support contract before any production rollout.</p>
+
+<h2>Webhooks: the smallest section, the lifecycle's connective tissue</h2>
+
+<p>Webhooks is the lightest of the four primitives, and the easiest to underestimate. The mechanics are simple, but webhooks are what make the platform feel composable: define an outcome, run an agent, get notified when done, fan out to your own systems.</p>
+
+<img src="https://raw.githubusercontent.com/cozypet/managed_agent_anthropic/main/images/diagram-07.png" alt="Webhooks: Anthropic ships event delivery, retries, signing. You ship the subscriber endpoint and the contract.">
+
+<p>Here is what Anthropic ships. HTTPS POST to your URL, HMAC signature in the headers, retries on 5xx, at least once delivery. Standard webhook infrastructure. The events you can subscribe to map to the session lifecycle: session start and end, outcome evaluation start and end, dream completion, session interruption.</p>
+
+<p>The marketing reads as if subscribing to webhooks gets you most of the way to event driven integration. The docs surface the work the marketing skips. You build the endpoint. You verify the HMAC signature. You handle idempotency on the at least once delivery semantics. You map event types to actions in your own systems.</p>
+
+<img src="https://raw.githubusercontent.com/cozypet/managed_agent_anthropic/main/images/diagram-08.png" alt="Map each event type to one architectural hook: session start, outcome end, dream completed, session interrupted.">
+
+<p>The architectural rule is simple: every event type you subscribe to needs a deliberate downstream action. If an event arrives and your handler has no opinion about what should happen next, do not subscribe. Noise drowns signal, and webhook stream debt accumulates.</p>
+
+<h3>How to do it</h3>
+
+<p>Run a small handler. Verify the signature, check idempotency, dispatch on event type.</p>
+
+<pre><code class="language-python">from fastapi import FastAPI, Request, HTTPException
+import hmac, hashlib, os
+
+app = FastAPI()
+SECRET = os.environ["ANTHROPIC_WEBHOOK_SECRET"].encode()
+seen_event_ids = set()  # In production: Redis or your DB
+
+@app.post("/anthropic/webhook")
+async def handle(request: Request):
+    body = await request.body()
+    sig = request.headers.get("anthropic-signature", "")
+    expected = hmac.new(SECRET, body, hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(sig, expected):
+        raise HTTPException(403)
+
+    payload = await request.json()
+    if payload["id"] in seen_event_ids:
+        return {"status": "duplicate"}
+    seen_event_ids.add(payload["id"])
+
+    if payload["type"] == "outcome_evaluation.end":
+        record_outcome_to_audit_log(payload)
+    elif payload["type"] == "dream.completed":
+        open_review_ticket(payload)
+    return {"status": "ok"}
+</code></pre>
+
+<h3>Commit posture</h3>
+
+<p>Commit. Webhooks is public beta with standard webhook patterns. The smallest mechanical surface of the four. Treat it as plumbing and move on.</p>
+
+<h2>What this means for the next managed primitive</h2>
+
+<p>The pattern repeats across all four primitives. Anthropic ships the harness; you ship the rubric, the runbook, the topology, the subscriber. The keynote framing compresses the developer's responsibility into a sentence ("self improving agents," "specialists work in parallel," "scheduled curation"). The docs restore the responsibility into something specific you can plan around.</p>
+
+<img src="https://raw.githubusercontent.com/cozypet/managed_agent_anthropic/main/images/diagram-09.png" alt="Diligence pattern: four questions to ask any future managed primitive: lifecycle, SLA gradient, shared resources, audit surface.">
+
+<p>Four questions earn you a clean read of the next managed primitive Anthropic announces. What is the lifecycle, named in states with terminal conditions? What is the SLA gradient, and which features in the bundle are research preview versus public beta versus GA? What shared resources does the primitive expose, and where do my concurrency assumptions break? What is the audit surface, and what is opaque?</p>
+
+<p>The piece is opinionated about Outcomes, Dreams, Multi-Agent, and Webhooks because the docs are now explicit about what they are. The diligence pattern is portable to whatever ships next. The keynote will sell abstraction; the docs will reveal a harness. Reading the docs is the new architectural literacy.</p>
+
+<h2>Credits and Further Reading</h2>
+
+<ul>
+  <li><a href="https://claude.com/blog/new-in-claude-managed-agents">Anthropic. New in Claude: Managed Agents (May 6, 2026)</a>: the announcement and the headline framing.</li>
+  <li><a href="https://platform.claude.com/docs/en/managed-agents/define-outcomes">Define Outcomes</a>: rubric mechanics, five terminal states, grader opacity, iteration budget.</li>
+  <li><a href="https://platform.claude.com/docs/en/managed-agents/dreams">Dreaming</a>: async job lifecycle, output store semantics, instructions field.</li>
+  <li><a href="https://platform.claude.com/docs/en/managed-agents/multi-agent">Multi-Agent Sessions</a>: shared container, one level of delegation, callable_agents.</li>
+  <li><a href="https://platform.claude.com/docs/en/managed-agents/webhooks">Subscribe to Webhooks</a>: event types, signing, retries.</li>
+  <li><a href="https://anthropic.com/engineering/managed-agents">Scaling Managed Agents: Decoupling the brain from the hands (April 8, 2026)</a>: the architectural rebuild that made this release possible.</li>
+  <li><a href="#TODO-LINK-TO-OUTCOMES-INVESTIGATION">Anthropic Shipped Outcomes. Real Story Is Verification Becoming a SKU.</a> The deeper read on why verification specifically went first.</li>
+</ul>
+
+</body>
+</html>

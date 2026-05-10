@@ -1,0 +1,767 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Diagrams: What Anthropic Manages In Managed Agents</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --dark: #141413;
+  --light: #faf9f5;
+  --mid-gray: #b0aea5;
+  --light-gray: #e8e6dc;
+  --orange: #d97757;
+  --blue: #6a9bcc;
+  --green: #788c5d;
+  --dark-soft: #2d2d2a;
+  --dark-muted: #5c5b55;
+  --dark-faint: #8a8880;
+  --orange-soft: #faf0eb;
+  --orange-mid: #ecc4b3;
+  --blue-soft: #eef4f9;
+  --blue-mid: #b8d4e8;
+  --green-soft: #f0f3ec;
+  --green-mid: #c0ccae;
+  --warm-bg: #f2f1ed;
+  --border: #e0ded6;
+  --border-soft: #eae8e2;
+  --red: #b54a3a;
+  --red-soft: #f9efed;
+  --amber: #b8923e;
+  --amber-soft: #f9f3e6;
+  --amber-mid: #dfc88e;
+  --shadow-sm: 0 1px 3px rgba(20,20,19,0.04), 0 1px 2px rgba(20,20,19,0.03);
+  --shadow-md: 0 4px 14px rgba(20,20,19,0.06), 0 1px 4px rgba(20,20,19,0.03);
+}
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--warm-bg);
+  font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+  color: var(--dark);
+  -webkit-font-smoothing: antialiased;
+}
+
+.diagram-container {
+  max-width: 780px;
+  margin: 48px auto;
+  padding: 0 24px;
+}
+
+.card {
+  background: var(--light);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow-md);
+  padding: 40px 36px 28px;
+  position: relative;
+}
+
+.card-number {
+  position: absolute;
+  top: 18px;
+  right: 24px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  color: var(--mid-gray);
+  font-weight: 400;
+  letter-spacing: 0.4px;
+}
+
+.card-title {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--dark);
+  line-height: 1.25;
+  margin: 0 70px 8px 0;
+  letter-spacing: -0.2px;
+}
+
+.card-sub {
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--dark-muted);
+  line-height: 1.45;
+  margin: 0 0 28px 0;
+}
+
+.card-body { margin-top: 12px; }
+
+.callout {
+  border-radius: 6px;
+  padding: 11px 16px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.45;
+  text-align: center;
+  margin-top: 22px;
+}
+.callout-blue { background: var(--blue-soft); color: var(--blue); border: 1px solid var(--blue-mid); }
+.callout-green { background: var(--green-soft); color: var(--green); border: 1px solid var(--green-mid); }
+.callout-orange { background: var(--orange-soft); color: var(--orange); border: 1px solid var(--orange-mid); }
+.callout-amber { background: var(--amber-soft); color: var(--amber); border: 1px solid var(--amber-mid); }
+.callout-neutral { background: var(--light); color: var(--dark-soft); border: 1px solid var(--border); }
+
+.attribution {
+  text-align: right;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--mid-gray);
+  margin-top: 22px;
+  font-weight: 400;
+  letter-spacing: 0.3px;
+}
+
+.tag {
+  display: inline-block;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 100px;
+  white-space: nowrap;
+}
+.tag-orange { background: var(--orange-soft); color: var(--orange); border: 1px solid var(--orange-mid); }
+.tag-blue { background: var(--blue-soft); color: var(--blue); border: 1px solid var(--blue-mid); }
+.tag-green { background: var(--green-soft); color: var(--green); border: 1px solid var(--green-mid); }
+.tag-amber { background: var(--amber-soft); color: var(--amber); border: 1px solid var(--amber-mid); }
+.tag-red { background: var(--red-soft); color: var(--red); border: 1px solid #e6c7c1; }
+.tag-gray { background: var(--light); color: var(--dark-faint); border: 1px solid var(--border); }
+
+/* generic flow node */
+.node {
+  background: var(--light);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 14px 16px;
+  box-shadow: var(--shadow-sm);
+  text-align: center;
+}
+.node .node-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--mid-gray);
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+.node .node-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--dark);
+  line-height: 1.3;
+}
+.node .node-desc {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  color: var(--dark-muted);
+  margin-top: 6px;
+  font-weight: 300;
+  line-height: 1.4;
+}
+.node-orange { border-color: var(--orange-mid); background: var(--orange-soft); }
+.node-orange .node-label { color: var(--orange); }
+.node-blue { border-color: var(--blue-mid); background: var(--blue-soft); }
+.node-blue .node-label { color: var(--blue); }
+.node-green { border-color: var(--green-mid); background: var(--green-soft); }
+.node-green .node-label { color: var(--green); }
+.node-dark { background: var(--dark); border-color: var(--dark); color: var(--light); }
+.node-dark .node-title { color: var(--light); }
+.node-dark .node-label { color: var(--mid-gray); }
+.node-dark .node-desc { color: var(--mid-gray); }
+
+.icon-container {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--light);
+  border: 1px solid var(--border);
+}
+.icon-orange { background: var(--orange-soft); border-color: var(--orange-mid); }
+.icon-blue { background: var(--blue-soft); border-color: var(--blue-mid); }
+.icon-green { background: var(--green-soft); border-color: var(--green-mid); }
+.icon-dark { background: var(--dark); border-color: var(--dark); }
+.icon-amber { background: var(--amber-soft); border-color: var(--amber-mid); }
+.icon-red { background: var(--red-soft); border-color: #e6c7c1; }
+
+@media (max-width: 600px) {
+  .card { padding: 28px 20px 22px; }
+  .card-title { font-size: 18px; margin-right: 56px; }
+  .card-sub { font-size: 13px; }
+}
+
+/* ============ DIAGRAM-SPECIFIC ============ */
+
+/* D1: Outcomes flow */
+.d1-grid {
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr;
+  gap: 16px;
+  align-items: center;
+}
+.d1-states { display: flex; flex-direction: column; gap: 8px; }
+.d1-states .tag { text-align: center; padding: 5px 10px; }
+.d1-mid { display: flex; flex-direction: column; gap: 12px; align-items: center; }
+.d1-mid .arrows { font-family: 'IBM Plex Mono', monospace; color: var(--mid-gray); font-size: 18px; line-height: 1; }
+.d1-grader-opaque {
+  background: var(--dark);
+  border: 1px dashed var(--dark-faint);
+  border-radius: 6px;
+  padding: 14px 16px;
+  width: 100%;
+  text-align: center;
+  position: relative;
+}
+.d1-grader-opaque .opaque-mark {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: var(--amber-soft);
+  border: 1px solid var(--amber-mid);
+  color: var(--amber);
+  border-radius: 100px;
+  padding: 2px 8px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.section-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--mid-gray);
+  margin-bottom: 10px;
+  font-weight: 500;
+  text-align: center;
+}
+
+/* D2: Rubric lifecycle */
+.d2-stages { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; align-items: stretch; }
+.d2-arrow {
+  text-align: center;
+  font-family: 'IBM Plex Mono', monospace;
+  color: var(--mid-gray);
+  font-size: 20px;
+  margin: 16px 0 4px;
+  line-height: 1;
+}
+.d2-stage { display: flex; flex-direction: column; gap: 8px; align-items: center; text-align: center; padding: 16px 12px; background: var(--light); border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--shadow-sm); }
+.d2-stage .step-num { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--orange); letter-spacing: 1px; font-weight: 500; }
+.d2-stage h4 { font-size: 15px; font-weight: 600; margin: 4px 0; }
+.d2-stage p { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--dark-muted); margin: 0; line-height: 1.45; font-weight: 300; }
+
+.d2-fanout { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 10px; width: 100%; }
+.d2-fanout .mini { background: var(--blue-soft); border: 1px solid var(--blue-mid); border-radius: 4px; padding: 6px 4px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--blue); text-align: center; font-weight: 500; }
+
+/* D3: Dreams lifecycle */
+.d3-flow { display: flex; flex-direction: column; gap: 14px; }
+.d3-row { display: grid; grid-template-columns: 1fr auto 1fr; gap: 14px; align-items: center; }
+.d3-row .arrow { color: var(--mid-gray); font-family: 'IBM Plex Mono', monospace; font-size: 18px; }
+.d3-states { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin: 14px 0; }
+.d3-state-pill { font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; padding: 5px 12px; border-radius: 100px; background: var(--blue-soft); color: var(--blue); border: 1px solid var(--blue-mid); }
+.d3-state-pill.terminal-good { background: var(--green-soft); color: var(--green); border-color: var(--green-mid); }
+.d3-state-pill.terminal-fail { background: var(--red-soft); color: var(--red); border-color: #e6c7c1; }
+.d3-state-pill.terminal-cancel { background: var(--light); color: var(--dark-faint); border-color: var(--border); }
+
+.d3-stores { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.d3-store {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  background: var(--light);
+  box-shadow: var(--shadow-sm);
+  position: relative;
+}
+.d3-store.input-store { border-style: solid; border-color: var(--blue-mid); background: var(--blue-soft); }
+.d3-store.output-store { border-color: var(--green-mid); background: var(--green-soft); }
+.d3-store h5 { margin: 0 0 4px; font-size: 14px; font-weight: 600; }
+.d3-store p { font-family: 'IBM Plex Mono', monospace; font-size: 11px; margin: 0; color: var(--dark-muted); font-weight: 300; line-height: 1.4; }
+.d3-store .store-tag { position: absolute; top: -10px; right: 12px; }
+
+/* D4: Memory store lineage */
+.d4-graph { padding: 20px 10px; }
+
+/* D5: Multi-Agent shape */
+.d5-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.d5-side { padding: 18px 14px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--light); position: relative; box-shadow: var(--shadow-sm); }
+.d5-side.allowed { border-color: var(--green-mid); }
+.d5-side.banned { border-color: #e6c7c1; }
+.d5-header { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
+.d5-header .tag { font-size: 11px; }
+.d5-side svg.tree { display: block; margin: 4px auto 0; }
+
+/* D6: Container sharing */
+.d6-container { background: var(--orange-soft); border: 1.5px solid var(--orange-mid); border-radius: 10px; padding: 22px; position: relative; }
+.d6-container > .label { position: absolute; top: -12px; left: 18px; background: var(--light); padding: 2px 10px; border: 1px solid var(--orange-mid); border-radius: 100px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--orange); font-weight: 500; letter-spacing: 0.6px; text-transform: uppercase; }
+.d6-shared { display: flex; gap: 8px; justify-content: center; margin-bottom: 16px; flex-wrap: wrap; }
+.d6-shared .shared-pill { font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500; padding: 4px 10px; border-radius: 100px; background: var(--light); color: var(--orange); border: 1px solid var(--orange-mid); }
+.d6-agents { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+.d6-agent { background: var(--light); border: 1px solid var(--border); border-radius: 6px; padding: 12px; box-shadow: var(--shadow-sm); }
+.d6-agent h5 { margin: 0 0 4px; font-size: 13px; font-weight: 600; color: var(--dark); }
+.d6-agent .ctx { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--dark-muted); border-top: 1px dashed var(--border); padding-top: 6px; margin-top: 6px; font-weight: 300; }
+
+/* D7: Webhook delivery */
+.d7-zones { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; align-items: stretch; }
+.d7-zone { border: 1px solid var(--border); border-radius: 8px; padding: 14px; background: var(--light); box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 8px; }
+.d7-zone.you { border-color: var(--orange-mid); background: var(--orange-soft); }
+.d7-zone.anthropic { border-color: var(--blue-mid); background: var(--blue-soft); }
+.d7-zone h5 { margin: 0 0 4px; font-size: 14px; font-weight: 600; }
+.d7-zone .item { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--dark-muted); padding: 4px 0; line-height: 1.4; font-weight: 300; }
+.d7-zone .own { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.8px; text-transform: uppercase; font-weight: 500; }
+.d7-zone.you .own { color: var(--orange); }
+.d7-zone.anthropic .own { color: var(--blue); }
+
+/* D8: Lifecycle hook patterns */
+.d8-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.d8-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
+  background: var(--light);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px 14px;
+  box-shadow: var(--shadow-sm);
+}
+.d8-row .event { font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; color: var(--blue); letter-spacing: 0.3px; }
+.d8-row .action { font-size: 13px; color: var(--dark-soft); font-weight: 400; line-height: 1.4; }
+
+/* D9: Diligence pattern */
+.d9-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.d9-quad { padding: 16px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--light); box-shadow: var(--shadow-sm); }
+.d9-quad .num { font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.8px; color: var(--orange); }
+.d9-quad h5 { font-size: 14px; font-weight: 600; margin: 6px 0 6px; line-height: 1.3; }
+.d9-quad p { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--dark-muted); margin: 0; line-height: 1.45; font-weight: 300; }
+</style>
+</head>
+<body>
+
+<!-- ============== D1: Outcomes flow ============== -->
+<div class="diagram-container">
+  <div class="card">
+    <div class="card-number">01 / 09</div>
+    <div class="card-title">What Anthropic Manages In Outcomes</div>
+    <div class="card-sub">The grader runs in a separate context window. You never see what it thinks; you only see what it returns.</div>
+    <div class="card-body">
+      <div class="d1-grid">
+        <!-- Left: Your rubric -->
+        <div>
+          <div class="section-label">You write</div>
+          <div class="node node-orange">
+            <div class="node-label">Rubric</div>
+            <div class="node-title">Markdown criteria</div>
+            <div class="node-desc">Per criterion. Versioned in your repo.</div>
+          </div>
+        </div>
+        <!-- Middle: Agent + Grader -->
+        <div>
+          <div class="section-label">Anthropic ships</div>
+          <div class="d1-mid">
+            <div class="node node-dark" style="width: 100%;">
+              <div class="node-label">Executor</div>
+              <div class="node-title">Agent in session</div>
+            </div>
+            <div class="arrows">↑ ↓</div>
+            <div class="d1-grader-opaque">
+              <span class="opaque-mark">opaque</span>
+              <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--mid-gray); letter-spacing: 0.8px; text-transform: uppercase; font-weight: 500;">Grader</div>
+              <div style="color: var(--light); font-size: 14px; font-weight: 600; margin-top: 4px;">Separate context</div>
+              <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--mid-gray); margin-top: 4px; font-weight: 300;">No tools. Reasoning hidden.</div>
+            </div>
+          </div>
+        </div>
+        <!-- Right: Terminal states -->
+        <div>
+          <div class="section-label">Terminal states</div>
+          <div class="d1-states">
+            <span class="tag tag-green">satisfied</span>
+            <span class="tag tag-orange">needs revision</span>
+            <span class="tag tag-amber">max iterations</span>
+            <span class="tag tag-red">failed</span>
+            <span class="tag tag-gray">interrupted</span>
+          </div>
+        </div>
+      </div>
+      <div class="callout callout-orange">Anthropic ships executor and grader. You ship the rubric and the audit log.</div>
+    </div>
+    <div class="attribution">Created by Han HELOIR YAN</div>
+  </div>
+</div>
+
+<!-- ============== D2: Rubric lifecycle ============== -->
+<div class="diagram-container">
+  <div class="card">
+    <div class="card-number">02 / 09</div>
+    <div class="card-title">The Rubric Is A Files API Artifact</div>
+    <div class="card-sub">Author once, upload once, attach to every session. Treat rubrics like code, not like inline strings.</div>
+    <div class="card-body">
+      <div class="d2-stages">
+        <div class="d2-stage">
+          <div class="step-num">01 AUTHOR</div>
+          <h4>Markdown in your repo</h4>
+          <p>rubrics/api_reference.md
+versioned, reviewed in PRs.</p>
+        </div>
+        <div class="d2-stage">
+          <div class="step-num">02 UPLOAD</div>
+          <h4>files.upload</h4>
+          <p>Returns file_id.
+Beta header: files-api-2025-04-14.</p>
+        </div>
+        <div class="d2-stage">
+          <div class="step-num">03 ATTACH</div>
+          <h4>Attach to many sessions</h4>
+          <p>file_id reused N times.
+One source of truth.</p>
+          <div class="d2-fanout">
+            <div class="mini">session 1</div>
+            <div class="mini">session 2</div>
+            <div class="mini">session 3</div>
+            <div class="mini">. . .</div>
+          </div>
+        </div>
+      </div>
+      <div class="callout callout-blue">Rubric authorship becomes a first class engineering process. Diff it. Review it. Tag it.</div>
+    </div>
+    <div class="attribution">Created by Han HELOIR YAN</div>
+  </div>
+</div>
+
+<!-- ============== D3: Dreams async lifecycle ============== -->
+<div class="diagram-container">
+  <div class="card">
+    <div class="card-number">03 / 09</div>
+    <div class="card-title">Dreams Is A Job You Trigger, Not A Schedule</div>
+    <div class="card-sub">The blog says "scheduled process." The API is async on demand. You build the cron, you decide adoption.</div>
+    <div class="card-body">
+
+      <div class="d3-stores" style="margin-bottom: 18px;">
+        <div class="d3-store input-store">
+          <span class="store-tag tag tag-blue">unchanged</span>
+          <h5>Input store v1</h5>
+          <p>+ up to 100 sessions. Never modified during a dream.</p>
+        </div>
+        <div class="d3-store output-store">
+          <span class="store-tag tag tag-green">new</span>
+          <h5>Output store v2</h5>
+          <p>Fresh memory store. Adopt or discard at your call.</p>
+        </div>
+      </div>
+
+      <div class="d3-states">
+        <span class="d3-state-pill">pending</span>
+        <span class="d3-state-pill">running</span>
+        <span class="d3-state-pill terminal-good">completed</span>
+        <span class="d3-state-pill terminal-fail">failed</span>
+        <span class="d3-state-pill terminal-cancel">canceled</span>
+      </div>
+
+      <div class="d3-row" style="margin-top: 8px;">
+        <div class="node node-orange">
+          <div class="node-label">You trigger</div>
+          <div class="node-title">dreams.create</div>
+          <div class="node-desc">Your cron, your CI hook, your operator.</div>
+        </div>
+        <span class="arrow">→</span>
+        <div class="node node-orange">
+          <div class="node-label">You adopt</div>
+          <div class="node-title">Attach or discard</div>
+          <div class="node-desc">Review, then point future sessions at v2.</div>
+        </div>
+      </div>
+
+      <div class="callout callout-orange">Dreams ships the engine. You ship the runbook.</div>
+    </div>
+    <div class="attribution">Created by Han HELOIR YAN</div>
+  </div>
+</div>
+
+<!-- ============== D4: Memory store lineage ============== -->
+<div class="diagram-container">
+  <div class="card">
+    <div class="card-number">04 / 09</div>
+    <div class="card-title">Memory Mutation Is Git Shaped</div>
+    <div class="card-sub">Stores accumulate. Lineage matters. Rollback means attach the previous store ID.</div>
+    <div class="card-body">
+      <div class="d4-graph">
+        <svg viewBox="0 0 700 220" width="100%" xmlns="http://www.w3.org/2000/svg" style="display: block;">
+          <!-- horizontal main lineage line -->
+          <line x1="60" y1="80" x2="640" y2="80" stroke="#e8e6dc" stroke-width="1.5" />
+          <!-- branch line -->
+          <line x1="370" y1="80" x2="600" y2="170" stroke="#e8e6dc" stroke-width="1.5" />
+
+          <!-- v1 dot -->
+          <circle cx="80" cy="80" r="8" fill="#6a9bcc" />
+          <circle cx="80" cy="80" r="14" fill="none" stroke="#b8d4e8" stroke-width="1" />
+          <text x="80" y="50" text-anchor="middle" fill="#141413" font-family="IBM Plex Sans, sans-serif" font-size="13" font-weight="600">v1</text>
+          <text x="80" y="115" text-anchor="middle" fill="#5c5b55" font-family="IBM Plex Mono, monospace" font-size="10" font-weight="300">initial</text>
+
+          <!-- dream label between v1 and v2 -->
+          <text x="180" y="74" text-anchor="middle" fill="#d97757" font-family="IBM Plex Mono, monospace" font-size="10" font-weight="500" letter-spacing="0.8">DREAM · 50 SESSIONS</text>
+
+          <!-- v2 dot -->
+          <circle cx="280" cy="80" r="8" fill="#788c5d" />
+          <circle cx="280" cy="80" r="14" fill="none" stroke="#c0ccae" stroke-width="1" />
+          <text x="280" y="50" text-anchor="middle" fill="#141413" font-family="IBM Plex Sans, sans-serif" font-size="13" font-weight="600">v2</text>
+          <text x="280" y="115" text-anchor="middle" fill="#5c5b55" font-family="IBM Plex Mono, monospace" font-size="10" font-weight="300">adopted</text>
+
+          <!-- dream label between v2 and v3 -->
+          <text x="380" y="74" text-anchor="middle" fill="#d97757" font-family="IBM Plex Mono, monospace" font-size="10" font-weight="500" letter-spacing="0.8">DREAM · 80 SESSIONS</text>
+
+          <!-- v3 dot -->
+          <circle cx="480" cy="80" r="8" fill="#788c5d" />
+          <circle cx="480" cy="80" r="14" fill="none" stroke="#c0ccae" stroke-width="1" />
+          <text x="480" y="50" text-anchor="middle" fill="#141413" font-family="IBM Plex Sans, sans-serif" font-size="13" font-weight="600">v3</text>
+          <text x="480" y="115" text-anchor="middle" fill="#5c5b55" font-family="IBM Plex Mono, monospace" font-size="10" font-weight="300">currently attached</text>
+
+          <!-- v4 dot (head, future) -->
+          <circle cx="620" cy="80" r="8" fill="none" stroke="#b0aea5" stroke-width="1.5" stroke-dasharray="2,2" />
+          <text x="620" y="50" text-anchor="middle" fill="#5c5b55" font-family="IBM Plex Sans, sans-serif" font-size="13" font-weight="500">v4</text>
+          <text x="620" y="115" text-anchor="middle" fill="#8a8880" font-family="IBM Plex Mono, monospace" font-size="10" font-weight="300">next dream</text>
+
+          <!-- branch dot -->
+          <circle cx="600" cy="170" r="7" fill="#b8923e" />
+          <circle cx="600" cy="170" r="12" fill="none" stroke="#dfc88e" stroke-width="1" />
+          <text x="600" y="200" text-anchor="middle" fill="#141413" font-family="IBM Plex Sans, sans-serif" font-size="12" font-weight="500">v2-experimental</text>
+          <text x="600" y="216" text-anchor="middle" fill="#5c5b55" font-family="IBM Plex Mono, monospace" font-size="9" font-weight="300">different instructions, discarded</text>
+
+          <!-- branch label -->
+          <text x="475" y="135" text-anchor="middle" fill="#b8923e" font-family="IBM Plex Mono, monospace" font-size="9" font-weight="500" letter-spacing="0.8">BRANCH</text>
+        </svg>
+      </div>
+      <div class="callout callout-green">A store_id is a checkpoint. Attach to roll forward. Reattach an older one to roll back.</div>
+    </div>
+    <div class="attribution">Created by Han HELOIR YAN</div>
+  </div>
+</div>
+
+<!-- ============== D5: Multi-Agent shape ============== -->
+<div class="diagram-container">
+  <div class="card">
+    <div class="card-number">05 / 09</div>
+    <div class="card-title">Multi-Agent Is Coordinator Plus Flat Workers</div>
+    <div class="card-sub">One level of delegation. Workers cannot call sub workers. If your task tree is hierarchical, flatten before committing.</div>
+    <div class="card-body">
+      <div class="d5-grid">
+        <!-- Allowed -->
+        <div class="d5-side allowed">
+          <div class="d5-header">
+            <span class="tag tag-green">allowed</span>
+          </div>
+          <svg class="tree" viewBox="0 0 280 200" width="100%" xmlns="http://www.w3.org/2000/svg">
+            <!-- coordinator -->
+            <rect x="100" y="20" width="80" height="36" rx="6" fill="#141413" stroke="#141413" />
+            <text x="140" y="42" text-anchor="middle" fill="#faf9f5" font-family="IBM Plex Sans, sans-serif" font-size="12" font-weight="600">Coordinator</text>
+            <!-- lines to workers -->
+            <line x1="140" y1="56" x2="50" y2="120" stroke="#788c5d" stroke-width="1.5" />
+            <line x1="140" y1="56" x2="140" y2="120" stroke="#788c5d" stroke-width="1.5" />
+            <line x1="140" y1="56" x2="230" y2="120" stroke="#788c5d" stroke-width="1.5" />
+            <!-- workers -->
+            <rect x="20" y="120" width="60" height="32" rx="6" fill="#f0f3ec" stroke="#c0ccae" />
+            <text x="50" y="140" text-anchor="middle" fill="#788c5d" font-family="IBM Plex Sans, sans-serif" font-size="11" font-weight="600">Worker A</text>
+            <rect x="110" y="120" width="60" height="32" rx="6" fill="#f0f3ec" stroke="#c0ccae" />
+            <text x="140" y="140" text-anchor="middle" fill="#788c5d" font-family="IBM Plex Sans, sans-serif" font-size="11" font-weight="600">Worker B</text>
+            <rect x="200" y="120" width="60" height="32" rx="6" fill="#f0f3ec" stroke="#c0ccae" />
+            <text x="230" y="140" text-anchor="middle" fill="#788c5d" font-family="IBM Plex Sans, sans-serif" font-size="11" font-weight="600">Worker C</text>
+            <!-- delegation label -->
+            <text x="140" y="180" text-anchor="middle" fill="#788c5d" font-family="IBM Plex Mono, monospace" font-size="10" font-weight="500" letter-spacing="0.8">ONE LEVEL OF DELEGATION</text>
+          </svg>
+        </div>
+        <!-- Banned -->
+        <div class="d5-side banned">
+          <div class="d5-header">
+            <span class="tag tag-red">not supported</span>
+          </div>
+          <svg class="tree" viewBox="0 0 280 200" width="100%" xmlns="http://www.w3.org/2000/svg">
+            <!-- coordinator -->
+            <rect x="100" y="20" width="80" height="36" rx="6" fill="#141413" stroke="#141413" />
+            <text x="140" y="42" text-anchor="middle" fill="#faf9f5" font-family="IBM Plex Sans, sans-serif" font-size="12" font-weight="600">Coordinator</text>
+            <!-- lines to sub coords -->
+            <line x1="140" y1="56" x2="80" y2="100" stroke="#b54a3a" stroke-width="1.5" stroke-dasharray="4,3" />
+            <line x1="140" y1="56" x2="200" y2="100" stroke="#b54a3a" stroke-width="1.5" stroke-dasharray="4,3" />
+            <!-- sub coords -->
+            <rect x="50" y="100" width="60" height="32" rx="6" fill="#f9efed" stroke="#e6c7c1" />
+            <text x="80" y="120" text-anchor="middle" fill="#b54a3a" font-family="IBM Plex Sans, sans-serif" font-size="11" font-weight="600">Sub Coord</text>
+            <rect x="170" y="100" width="60" height="32" rx="6" fill="#f9efed" stroke="#e6c7c1" />
+            <text x="200" y="120" text-anchor="middle" fill="#b54a3a" font-family="IBM Plex Sans, sans-serif" font-size="11" font-weight="600">Sub Coord</text>
+            <!-- lines to leaves -->
+            <line x1="80" y1="132" x2="50" y2="170" stroke="#b54a3a" stroke-width="1.5" stroke-dasharray="4,3" />
+            <line x1="80" y1="132" x2="110" y2="170" stroke="#b54a3a" stroke-width="1.5" stroke-dasharray="4,3" />
+            <line x1="200" y1="132" x2="170" y2="170" stroke="#b54a3a" stroke-width="1.5" stroke-dasharray="4,3" />
+            <line x1="200" y1="132" x2="230" y2="170" stroke="#b54a3a" stroke-width="1.5" stroke-dasharray="4,3" />
+            <!-- leaves -->
+            <circle cx="50" cy="178" r="6" fill="#f9efed" stroke="#e6c7c1" />
+            <circle cx="110" cy="178" r="6" fill="#f9efed" stroke="#e6c7c1" />
+            <circle cx="170" cy="178" r="6" fill="#f9efed" stroke="#e6c7c1" />
+            <circle cx="230" cy="178" r="6" fill="#f9efed" stroke="#e6c7c1" />
+            <!-- big X overlay -->
+            <line x1="40" y1="14" x2="240" y2="194" stroke="#b54a3a" stroke-width="2" opacity="0.35" />
+            <line x1="240" y1="14" x2="40" y2="194" stroke="#b54a3a" stroke-width="2" opacity="0.35" />
+          </svg>
+        </div>
+      </div>
+      <div class="callout callout-amber">Tree shaped tasks need flattening or chaining via Outcomes. Multi-Agent does not nest.</div>
+    </div>
+    <div class="attribution">Created by Han HELOIR YAN</div>
+  </div>
+</div>
+
+<!-- ============== D6: Container sharing ============== -->
+<div class="diagram-container">
+  <div class="card">
+    <div class="card-number">06 / 09</div>
+    <div class="card-title">Specialists Share The Container, Not Just The Filesystem</div>
+    <div class="card-sub">Same kernel, same process namespace, same network. Isolation lives at the conversation context, nowhere lower.</div>
+    <div class="card-body">
+      <div class="d6-container">
+        <span class="label">shared container</span>
+        <div class="d6-shared">
+          <span class="shared-pill">kernel</span>
+          <span class="shared-pill">filesystem</span>
+          <span class="shared-pill">process namespace</span>
+          <span class="shared-pill">network</span>
+        </div>
+        <div class="d6-agents">
+          <div class="d6-agent">
+            <h5>Coordinator</h5>
+            <div class="ctx">private context</div>
+          </div>
+          <div class="d6-agent">
+            <h5>Worker A</h5>
+            <div class="ctx">private context</div>
+          </div>
+          <div class="d6-agent">
+            <h5>Worker B</h5>
+            <div class="ctx">private context</div>
+          </div>
+        </div>
+      </div>
+      <div class="callout callout-orange">Mental model: cooperating threads on shared mutable state. Not microservices.</div>
+    </div>
+    <div class="attribution">Created by Han HELOIR YAN</div>
+  </div>
+</div>
+
+<!-- ============== D7: Webhook delivery ============== -->
+<div class="diagram-container">
+  <div class="card">
+    <div class="card-number">07 / 09</div>
+    <div class="card-title">Webhooks Are The Lifecycle's Connective Tissue</div>
+    <div class="card-sub">Anthropic ships delivery, retries, signing. You ship the subscriber and the contract.</div>
+    <div class="card-body">
+      <div class="d7-zones">
+        <div class="d7-zone anthropic">
+          <span class="own">Anthropic emits</span>
+          <h5>Session events</h5>
+          <div class="item">session.started</div>
+          <div class="item">outcome_evaluation.end</div>
+          <div class="item">dream.completed</div>
+          <div class="item">session.interrupted</div>
+        </div>
+        <div class="d7-zone anthropic">
+          <span class="own">Anthropic ships</span>
+          <h5>Webhook delivery</h5>
+          <div class="item">HTTPS POST to your URL</div>
+          <div class="item">HMAC signature</div>
+          <div class="item">Retries on 5xx</div>
+          <div class="item">At least once delivery</div>
+        </div>
+        <div class="d7-zone you">
+          <span class="own">You ship</span>
+          <h5>Your endpoint</h5>
+          <div class="item">Signature verification</div>
+          <div class="item">Idempotency key handling</div>
+          <div class="item">Event to action mapping</div>
+          <div class="item">Dead letter handling</div>
+        </div>
+      </div>
+      <div class="callout callout-orange">The connector is yours to write. Anthropic does not know what comes after the event.</div>
+    </div>
+    <div class="attribution">Created by Han HELOIR YAN</div>
+  </div>
+</div>
+
+<!-- ============== D8: Lifecycle hook patterns ============== -->
+<div class="diagram-container">
+  <div class="card">
+    <div class="card-number">08 / 09</div>
+    <div class="card-title">Map Each Event Type To One Architectural Hook</div>
+    <div class="card-sub">Webhooks earn their cost when each event type maps to a deliberate downstream action.</div>
+    <div class="card-body">
+      <div class="d8-grid">
+        <div class="d8-row">
+          <div class="event">session.started</div>
+          <div class="action">Kick off external workflow tracking. Start a timer for SLO monitoring.</div>
+        </div>
+        <div class="d8-row">
+          <div class="event">outcome_evaluation.end</div>
+          <div class="action">Update the progress dashboard. Capture the rubric verdict to your audit log.</div>
+        </div>
+        <div class="d8-row">
+          <div class="event">dream.completed</div>
+          <div class="action">Open a review ticket. Block auto adoption until a human signs off.</div>
+        </div>
+        <div class="d8-row">
+          <div class="event">session.interrupted</div>
+          <div class="action">Run cleanup. Reconcile partial state. Page on call if budget exceeded.</div>
+        </div>
+      </div>
+      <div class="callout callout-blue">If an event has no mapped action, do not subscribe. Noise drowns signal.</div>
+    </div>
+    <div class="attribution">Created by Han HELOIR YAN</div>
+  </div>
+</div>
+
+<!-- ============== D9: Diligence pattern ============== -->
+<div class="diagram-container">
+  <div class="card">
+    <div class="card-number">09 / 09</div>
+    <div class="card-title">Diligence For The Next Managed Primitive</div>
+    <div class="card-sub">Four questions to ask any future managed announcement, before the slide deck has cooled.</div>
+    <div class="card-body">
+      <div class="d9-grid">
+        <div class="d9-quad">
+          <div class="num">Q1</div>
+          <h5>What is the lifecycle?</h5>
+          <p>States, transitions, terminal conditions. If the docs cannot draw it, the abstraction is not real yet.</p>
+        </div>
+        <div class="d9-quad">
+          <div class="num">Q2</div>
+          <h5>What is the SLA gradient?</h5>
+          <p>Research preview, public beta, GA. Different commit risks. Bundles often hide the weakest tier.</p>
+        </div>
+        <div class="d9-quad">
+          <div class="num">Q3</div>
+          <h5>What shared resources?</h5>
+          <p>Container, filesystem, network, state. Whatever is shared is your concurrency problem.</p>
+        </div>
+        <div class="d9-quad">
+          <div class="num">Q4</div>
+          <h5>What is the audit surface?</h5>
+          <p>What is auditable. What is opaque. Regulated verticals stop or start here.</p>
+        </div>
+      </div>
+      <div class="callout callout-neutral">Four questions before commit. Same four questions next release cycle.</div>
+    </div>
+    <div class="attribution">Created by Han HELOIR YAN</div>
+  </div>
+</div>
+
+</body>
+</html>
