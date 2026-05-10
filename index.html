@@ -25,21 +25,17 @@
 
 <h1>What Anthropic Manages In Managed Agents. And What You Still Do.</h1>
 
-<p>The keynote at Code with Claude SF 2026 sold Dreams as "a scheduled process that reviews your agent sessions and memory stores." That single phrase shaped how every architect in the room mentally filed it: a managed cron, running quietly, curating memory between sessions.</p>
+<p>The keynote at Code with Claude SF 2026 sold Dreams as "a scheduled process that reviews your agent sessions and memory stores." That single phrase shaped how engineering teams filed it: a managed cron, running quietly, curating memory between sessions.</p>
 
-<p>Then you read the docs. The SDK call is <code>dreams.create</code>. There is no schedule. It is an async job you trigger. The cron is yours to write, the adoption decision is yours, the lineage is yours to track.</p>
-
-<p>One small gap reframes everything. Code with Claude SF 2026 was the moment Anthropic stopped selling abstraction and started selling a harness. The docs reveal what they actually shipped, and what stays your job.</p>
+<p>Then you read the docs. The SDK call is <code>dreams.create</code>. There is no schedule. It is an async job you trigger. The cron is yours to write, the adoption decision is yours, the lineage is yours to track. One mechanic, the entire framing shifts.</p>
 
 <h2>Before we start! 🦸🏻‍♀️</h2>
 
 <p>If this helps you ship better AI systems: 👏 Clap 50 times (yes, you can!). Medium's algorithm favors this, increasing visibility to others who then discover the article. 🔔 Follow me on <a href="https://medium.com/@han.heloir">Medium</a>, <a href="https://www.linkedin.com/in/hanheloiryan/">LinkedIn</a> and <a href="https://medium.com/@han.heloir/about">subscribe</a> to get my latest article.</p>
 
-<p>Code with Claude SF 2026 shipped four Managed Agents primitives: Outcomes, Dreams, Multi-Agent, and Webhooks. The keynote framed them as a coherent platform expansion. The docs reveal a per feature pattern: Anthropic manages a specific slice, and you still own the rest.</p>
+<p>The May 6 announcement covered four Managed Agents primitives: Outcomes, Dreams, Multi-Agent, and Webhooks. The keynote presented a coherent platform expansion. The docs ship a per feature contract: Anthropic runs a specific slice, you still own the rest.</p>
 
-<p>What follows walks each primitive through the same lens. For each one we ask: what does Anthropic actually run on your behalf, what stays your job, and what is the commit posture once you understand both sides?</p>
-
-<p>The marketing claims a fully managed service. The mechanics ship something more interesting: a coordinator's harness that pushes architectural work back to you in places the slide deck never named. The piece is opinionated about where to commit and where to defer, grounded in the actual SDK calls and the actual lifecycle states.</p>
+<p>What follows walks each primitive through the same lens, grounded in the SDK calls and lifecycle states the slide deck skipped. The piece is opinionated about where to commit, where to defer, and why reading the docs is now architectural literacy.</p>
 
 <h2>Outcomes: the harness handles the loop, you author the rubric</h2>
 
